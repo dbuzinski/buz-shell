@@ -1,0 +1,8 @@
+env:
+  TERM: xterm-256color
+
+window:
+  option_as_alt: OnlyLeft
+
+import:
+  - ~/.config/alacritty/themes/catppuccin-mocha.yml

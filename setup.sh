@@ -26,11 +26,32 @@ if [ "$(uname)" == "Darwin" ]; then
   brew install neovim
   # Install tmux
   brew install tmux
+
+  # Install alacrity on macOS
+  # Install rust if not already installed
+  if ! command -v rustc &> /dev/null; then
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+    # Add cargo to PATH
+    export PATH="$HOME/.cargo/bin:$PATH"
+  fi
+
+  # Use cargo to install alacritty
+  cargo install alacritty
+
+  # Copy alacritty config to $HOME/.config/alacritty/alacritty.toml
+  mkdir -p $HOME/.config/alacritty/themes
+  cp alacritty/alacritty.yml $HOME/.config/alacritty/alacritty.yml
+
+  # Copy alacritty theme files to $HOME/.config/alacritty
+  curl -LO --output-dir ~/.config/alacritty/themes https://github.com/catppuccin/alacritty/raw/yaml/catppuccin-latte.yml
+  curl -LO --output-dir ~/.config/alacritty/themes https://github.com/catppuccin/alacritty/raw/yaml/catppuccin-frappe.yml
+  curl -LO --output-dir ~/.config/alacritty/themes https://github.com/catppuccin/alacritty/raw/yaml/catppuccin-macchiato.yml
+  curl -LO --output-dir ~/.config/alacritty/themes https://github.com/catppuccin/alacritty/raw/yaml/catppuccin-mocha.yml
 fi
 
 # Linux
 if [ "$(uname)" == "Linux" ]; then
-  # Install with apt if on Ubuntu
+  # Install with apt
   export DEBIAN_FRONTEND=noninteractive
   if [ -x "$(command -v apt)" ]; then
     sudoIfAvailable apt-get update
@@ -39,80 +60,55 @@ if [ "$(uname)" == "Linux" ]; then
       sudoIfAvailable apt-get install -y git-all
     fi
     sudoIfAvailable apt-get install -y curl
+    # Install tmux
     sudoIfAvailable apt-get install -y tmux
-    # Install alacritty dependencies
-    sudoIfAvailable apt-get install -y \
-      cmake \
-      pkg-config \
-      libfreetype6-dev \
-      libfontconfig1-dev \
-      libxcb-xfixes0-dev \
-      libxkbcommon-dev \
-      python3
-  # Install with pacman if on Arch
+    sudoIfAvailable apt-get install -y gcc
+  # Install with pacman
   elif [ -x "$(command -v pacman)" ]; then
+      sudoIfAvailable pacman -Sy which
     # Check for git and install if we don't have it
     if test ! $(which git); then
-      sudoIfAvailable pacman -S git
+      sudoIfAvailable pacman -Sy --noconfirm git
     fi
-    sudoIfAvailable pacman -S curl
-    sudoIfAvailable pacman -S tmux
-    # Install alacritty dependencies
-    sudoIfAvailable pacman -S \
-      cmake \
-      freetype2 \
-      fontconfig \
-      pkg-config \
-      make \
-      libxcb \
-      libxkbcommon \
-      python
-  # Install with dnf if on Fedora
+    sudoIfAvailable pacman -Sy --noconfirm curl
+    # Install tmux
+    sudoIfAvailable pacman -Sy --noconfirm tmux
+    sudoIfAvailable pacman -Sy --noconfirm gcc
+  # Install with dnf
   elif [ -x "$(command -v dnf)" ]; then
     # Check for git and install if we don't have it
+    sudoIfAvailable dnf install -y which
     if test ! $(which git); then
       sudoIfAvailable dnf install -y git
     fi
     sudoIfAvailable dnf install -y curl
+    # Install tmux
+    sudoIfAvailable dnf install -y http://galaxy4.net/repo/galaxy4-release-8-current.noarch.rpm
     sudoIfAvailable dnf install -y tmux
-    sudoIfAvailable dnf install -y \
-      cmake \
-      freetype-devel \
-      fontconfig-devel \
-      libxcb-devel \
-      libxkbcommon-devel \
-      g++
-  # Install with yum if on CentOS
+    sudoIfAvailable dnf install -y gcc
+  # Install with yum
   elif [ -x "$(command -v yum)" ]; then
+    sudoIfAvailable yum install -y which
     # Check for git and install if we don't have it
     if test ! $(which git); then
-      sudoIfAvailable yum install -y git-all
+      sudoIfAvailable yum install -y git
     fi
     sudoIfAvailable yum install -y curl
-    sudoIfAvailable yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
+    # Install tmux
+    sudoIfAvailable yum install -y http://galaxy4.net/repo/galaxy4-release-8-current.noarch.rpm
     sudoIfAvailable yum install -y tmux
-    sudoIfAvailable yum install -y \
-      cmake \
-      freetype-devel \
-      fontconfig-devel \
-      libxcb-devel \
-      libxkbcommon-devel \
-      xcb-util-devel
-    sudoIfAvailable yum group install -y "Development Tools"
-  # Install with zypper if on OpenSUSE
+    sudoIfAvailable yum install -y gcc
+  # Install with zypper
   elif [ -x "$(command -v zypper)" ]; then
     # Check for git and install if we don't have it
+    sudoIfAvailable zypper install -y which tar gzip
     if test ! $(which git); then
       sudoIfAvailable zypper install -y git
     fi
     sudoIfAvailable zypper install -y curl
+    # Install tmux
     sudoIfAvailable zypper install -y tmux
-    sudoIfAvailable zypper install -y \
-      cmake \
-      freetype-devel \
-      fontconfig-devel \
-      libxcb-devel \
-      libxkbcommon-devel
+    sudoIfAvailable zypper install -y gcc
   # Catch unsupported Linux distros
   else
     echo "Unsupported Linux distro"
@@ -133,24 +129,6 @@ if [ ! -d "${XDG_CONFIG_HOME:-$HOME/.config}"/nvim ]; then
   git clone https://github.com/nvim-lua/kickstart.nvim.git "${XDG_CONFIG_HOME:-$HOME/.config}"/nvim
 fi
 
-# Install rust if not already installed
-if ! command -v rustc &> /dev/null; then
-  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-  # Add cargo to PATH
-  export PATH="$HOME/.cargo/bin:$PATH"
-fi
-# Use cargo to install alacritty
-cargo install alacritty
-
-# Copy alacritty config to $HOME/.config/alacritty/alacritty.toml
-mkdir -p $HOME/.config/alacritty/themes
-cp alacritty/alacritty.yml $HOME/.config/alacritty/alacritty.yml
-
-# Copy alacritty theme files to $HOME/.config/alacritty
-curl -LO --output-dir ~/.config/alacritty/themes https://github.com/catppuccin/alacritty/raw/main/catppuccin-latte.toml
-curl -LO --output-dir ~/.config/alacritty/themes https://github.com/catppuccin/alacritty/raw/main/catppuccin-frappe.toml
-curl -LO --output-dir ~/.config/alacritty/themes https://github.com/catppuccin/alacritty/raw/main/catppuccin-macchiato.toml
-curl -LO --output-dir ~/.config/alacritty/themes https://github.com/catppuccin/alacritty/raw/main/catppuccin-mocha.toml
 
 # Install tmux plugin manager if not already installed
 if [ ! -d $HOME/.tmux/plugins/tpm ]; then
